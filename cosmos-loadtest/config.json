@@ -1,0 +1,54 @@
+{
+  "cosmosConnection": "",
+  "databaseName": "db1",
+  "containerName": "container1",
+  "preferredRegion": "South Central US",
+  "durationSec": 60,
+  "printClientStats": true,
+  "printResultRecord": true,
+  "loadConfig": [
+    {
+      "taskCount": 1,
+      "intervalMS": 1000,
+      "applicationName": "Test_Query1",
+      "query": {
+        "text": "select * from c where c.id = @param1",
+        "parameters": {
+          "@param1": {
+            "type": "random_int",
+            "start": 1,
+            "end": 10
+          }
+        }
+      }
+    },
+    {
+      "taskCount": 1,
+      "intervalMS": 1000,
+      "applicationName": "Test_Query2",
+      "query": {
+        "text": "select * from c where c.nome = @param1",
+        "parameters": {
+          "@param1": {
+            "type": "random_list",
+            "list": [ "marcelo1", "marcelo2", "marcelo3", "marcelo4", "marcelo5", "marcelo6", "marcelo7", "marcelo8", "marcelo9", "marcelo10" ]
+          }
+        }
+      }
+    },
+    {
+      "taskCount": 1,
+      "intervalMS": 1000,
+      "applicationName": "Test_Query3",
+      "query": {
+        "text": "select * from c where c.produto = @param1",
+        "parameters": {
+          "@param1": {
+            "type": "random_list",
+            "list": [ "notebook1", "notebook2", "notebook3", "notebook4", "notebook5", "notebook6", "notebook7", "notebook8", "notebook9", "notebook10" ]
+          }
+        }
+      }
+    }
+  ]
+}

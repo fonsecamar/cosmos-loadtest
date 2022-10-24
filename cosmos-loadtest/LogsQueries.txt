@@ -1,0 +1,33 @@
+﻿//Requests per second for each tested queries
+CDBDataPlaneRequests
+| where OperationName == "Query" and CollectionName == "container1"
+| extend Application = tostring(split(UserAgent, "|")[6])
+| summarize count() by bin(TimeGenerated, 1s), Application
+| render timechart 
+
+//Aggregated Requests per second considering all tested queries
+CDBDataPlaneRequests
+| where OperationName == "Query" and CollectionName == "container1"
+| extend Application = tostring(split(UserAgent, "|")[6])
+| where Application startswith "Test_Query"
+| summarize count() by bin(TimeGenerated, 1s)
+| render timechart 
+
+//Requests per second for each region
+CDBDataPlaneRequests
+| where OperationName == "Query" and CollectionName == "container1"
+| extend Application = tostring(split(UserAgent, "|")[6])
+| summarize count() by bin(TimeGenerated, 1s), RegionName
+| render timechart 
+
+
+
+{
+      "taskCount": 1,
+      "intervalMS": 100,
+      "applicationName": "Test_PointRead1",
+      "pointRead": {
+        "partitionKeyValue": "1",
+        "id": "1"
+      }
+    }

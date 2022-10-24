@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32929.385
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cosmos-loadtest", "cosmos-loadtest\cosmos-loadtest.csproj", "{7022E77B-CF40-4DB3-95D3-89EB4C58347B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Debug|x64.ActiveCfg = Debug|x64
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Debug|x64.Build.0 = Debug|x64
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Release|x64.ActiveCfg = Release|x64
+		{7022E77B-CF40-4DB3-95D3-89EB4C58347B}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7EFA7F7C-931E-40FA-9008-2FFB9B27E607}
+	EndGlobalSection
+EndGlobal
