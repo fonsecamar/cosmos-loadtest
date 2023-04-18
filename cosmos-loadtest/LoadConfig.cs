@@ -4,6 +4,9 @@ namespace cosmos_loadtest
 {
     public class LoadConfig
     {
+        private string _id = Guid.NewGuid().ToString();
+
+        public string id { get { return this._id; } }
         public int taskCount { get; set; }
         public int intervalMS { get; set; }
         public string applicationName { get; set; }
@@ -19,18 +22,19 @@ namespace cosmos_loadtest
         public class Query
         {
             public string text { get; set; }
-            public Dictionary<string, Param> parameters { get; set; }
+            public List<Param> parameters { get; set; }
         }
 
         public class Create
         {
             public JObject entity { get; set; }
-            public Dictionary<string, Param> parameters { get; set; }
+            public List<Param> parameters { get; set; }
             public List<string> partitionKey { get; set; }
         }
 
         public class Param
         {
+            public string name { get; set; }
             public string type { get; set; }
             public long start { get; set; }
             public long end { get; set; }
@@ -40,8 +44,9 @@ namespace cosmos_loadtest
 
         public class PointRead
         {
-            public Param partitionKey { get; set; }
-            public Param id { get; set; }
+            public string partitionKey { get; set; }
+            public string id { get; set; }
+            public List<Param> parameters { get; set; }
         }
     }
 }

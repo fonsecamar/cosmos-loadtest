@@ -101,7 +101,7 @@ public partial class Program
             {
                 foreach (var item in loadConfig.query.parameters)
                 {
-                    query.WithParameter(item.Key, GenerateParamValue(item.Value).ToString());
+                    query.WithParameter(item.name, GenerateParamValue(item, loadConfig.id).ToString());
                 }
 
                 using (var iterator = container.GetItemQueryStreamIterator(query))
@@ -136,13 +136,13 @@ public partial class Program
     {
         var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
 
-        Dictionary<KeyValuePair<string, Param>, List<string>> paths = new Dictionary<KeyValuePair<string, Param>, List<string>>();
+        Dictionary<Param, List<string>> paths = new Dictionary<Param, List<string>>();
 
         var lConfig = loadConfig.create ?? loadConfig.upsert;
 
         foreach (var item in lConfig.parameters)
         {
-            paths.Add(item, lConfig.entity.Values().Where(x => x.ToString() == item.Key).Select(x => x.Path).ToList());
+            paths.Add(item, lConfig.entity.Values().Where(x => x.ToString() == item.name).Select(x => x.Path).ToList());
         }
 
         while (!cancellation.IsCancellationRequested)
@@ -153,7 +153,7 @@ public partial class Program
             {
                 foreach (var item in paths)
                 {
-                    var val = GenerateParamValue(item.Key.Value);
+                    var val = GenerateParamValue(item.Key, loadConfig.id);
                     foreach (var path in item.Value)
                     {
                         entity[path] = val;
@@ -186,7 +186,7 @@ public partial class Program
         }
     }
 
-    static JValue GenerateParamValue(Param param, string paramName = "")
+    static JValue GenerateParamValue(Param param, string configContext)
     {
         switch (param.type.ToLowerInvariant())
         {
@@ -197,7 +197,7 @@ public partial class Program
             case "random_int":
                 return new JValue(Random.Shared.NextInt64(param.start, param.end).ToString());
             case "sequential_int":
-                return new JValue(GetSequentialValueAsync(paramName, param.start).ToString());
+                return new JValue(GetSequentialValueAsync($"{configContext}_{param.name}", param.start).ToString());
             case "random_list":
                 return new JValue(param.list[Random.Shared.Next(1, param.list.Count)]);
             default:
@@ -209,12 +209,20 @@ public partial class Program
     {
         var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
 
+        var paramId = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.id).First();
+        var paramPk = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.partitionKey).First();
+
+        bool isIdPkSame = loadConfig.pointRead.id == loadConfig.pointRead.partitionKey;
+
         while (!cancellation.IsCancellationRequested)
         {
             try
             {
-                var id = GenerateParamValue(loadConfig.pointRead.id).ToString();
-                var pk = GenerateParamValue(loadConfig.pointRead.partitionKey).ToString();
+                if (loadConfig.pointRead.parameters.Count > 2)
+                    throw new Exception("Maximum of 2 parameters for Point Read operations!");
+
+                var id = GenerateParamValue(paramId, loadConfig.id).ToString();
+                var pk = isIdPkSame ? id : GenerateParamValue(paramPk, loadConfig.id).ToString();
 
                 using (var response = await container.ReadItemStreamAsync(id, new PartitionKey(pk)))
                 {
