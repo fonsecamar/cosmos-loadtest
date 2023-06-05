@@ -15,7 +15,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 ## Steps
 
 1. Download the latest release from <a href=https://github.com/fonsecamar/cosmos-loadtest/releases>here</a>.
-2. Extract `cosmos-loadtest_v0.1.zip` and open the `config.json` file in your text editor.
+2. Extract `cosmos-loadtest_v0.2.zip` and open the `config.json` file in your text editor.
 3. Configure the parameters according to your requirements (options detailed below).
 4. Run `cosmos-loadtest.exe`.
 
