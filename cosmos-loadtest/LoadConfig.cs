@@ -38,6 +38,7 @@ namespace cosmos_loadtest
             public string type { get; set; }
             public long start { get; set; }
             public long end { get; set; }
+            public string value { get; set; }
             public List<string> list { get; set; }
 
         }

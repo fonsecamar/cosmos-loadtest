@@ -20,6 +20,8 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 4. Run `cosmos-loadtest.exe`.
 
 > For better performance, run the load tester in a VM in the same Azure Region as your Azure Cosmos DB account.
+> 
+> Attribute provided as partition key MUST be of type `string`.
 
 ## Configuration Options
 
@@ -28,7 +30,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 | cosmosConnection | string | Connection string of your Cosmos DB account | yes |
 | databaseName | string | Database name | yes |
 | containerName | string | Container Name | yes |
-| preferredRegion | string | If using multi region account, use to set the preferred region | no |
+| preferredRegions | array | Array of strings. If using multi region account, use to set the preferred region | no |
 | durationSec | integer | Test duration in seconds | yes |
 | printClientStats | boolean | Flag to print client statistics (noisy in massive tests) | yes |
 | printResultRecord | boolean | Flag to print the results either for queries or creates/upserts (noisy in massive tests)  | yes |
@@ -62,7 +64,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 | taskCount | integer | Number of concurrent tasks to run | yes |
 | intervalMS | integer | Interval/delay between interations within the same task | yes |
 | applicationName | string | Application name used for CosmosClient. Helpful for tracing using Diagnostic Settings | no |
-| allowBulk | boolean | Flag to use Bulk Mode | yes |
+| allowBulk | boolean | Flag to use Bulk Mode. Default: false. | no |
 | create.entity | JSON object | Any JSON object to create. Include parameters to bind. | yes |
 | create.partitionKey | array | Specify container partition. Single or multiple (hierarchical partition) | yes |
 | create.parameters | array | Array of parameters to bind in entity | yes |
@@ -74,7 +76,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 | taskCount | integer | Number of concurrent tasks to run | yes |
 | intervalMS | integer | Interval/delay between interations within the same task | yes |
 | applicationName | string | Application name used for CosmosClient. Helpful for tracing using Diagnostic Settings | no |
-| allowBulk | boolean | Flag to use Bulk Mode | yes |
+| allowBulk | boolean | Flag to use Bulk Mode.. Default: false. | no |
 | upsert.entity | JSON object | Any JSON object to create. Include parameters to bind. | yes |
 | upsert.partitionKey | array | Specify container partition. Single or multiple (hierarchical partition) | yes |
 | upsert.parameters | array | Array of parameters to bind in entity | yes |
@@ -84,12 +86,12 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 | Attribute | Type | Description | Required |
 | --- | --- | --- | --- |
 | name | string | Parameter name matching the ones used in the test config | yes |
-| type | string | Parameter type. Allowed values: `guid`, `datetime`, `random_int`, `sequential_int`, `random_list` | yes |
-| start | int | Range start for `random_int` or `sequential_int` | yes if `random_int` or `sequential_int` |
-| end | int | Range end for `random_int` | yes if `random_int` |
+| type | string | Parameter type. Allowed values: `guid`, `datetime`, `random_int`, `random_int_as_string`, `sequential_int`, `sequential_int_as_string`, `random_list`, `random_bool`, `faker.firstname`, `faker.lastname`, `faker.fullname`, `faker.dateofbirth`, `faker.address`, `faker.phone`, `faker.email` | yes |
+| start | int | Range start for `random_int(_as_string)` or `sequential_int(_as_string)` | yes if `random_int(_as_string)` or `sequential_int(_as_string)` |
+| end | int | Range end for `random_int(_as_string)` | yes if `random_int(_as_string)` |
 | list | array | List of values to be randomly picked | yes if `random_list` |
 
-> Currently, all parameters are always returned as string.
+> Same parameter can be assigned to multiple entity attributes.
 
 <br/>
 

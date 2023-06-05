@@ -1,79 +1,125 @@
 {
-  "cosmosConnection": "",
-  "databaseName": "db1",
-  "containerName": "container1",
-  "preferredRegion": "South Central US",
-  "durationSec": 60,
+  "cosmosConnection": "AccountEndpoint=https://<your account>.documents.azure.com:443/;AccountKey=<account key>",
+  "databaseName": "payments",
+  "containerName": "transaction",
+  "preferredRegion": [ "South Central US" ],
+  "durationSec": 300,
   "printClientStats": true,
   "printResultRecord": true,
   "loadConfig": [
     {
-      "taskCount": 0,
+      "taskCount": 1,
       "intervalMS": 1000,
-      "applicationName": "Test_Query1",
+      "applicationName": "Demo_Query_Transaction",
       "query": {
-        "text": "select * from c where c.id = @param1 and c.attribute1 = @param2",
+        "text": "select top 50 * from c where c.accountId = @accountId and c.type = \"transaction\" order by c.timestamp desc",
         "parameters": [
           {
-            "name": "@param1",
-            "type": "sequential_int",
-            "start": 1
-          },
-          {
-            "name": "@param2",
-            "type": "random_list",
-            "list": [ "some hardcoded value", "some hardcoded value - updated" ]
+            "name": "@accountId",
+            "type": "random_int_as_string",
+            "start": 1,
+            "end": 1000000
           }
         ]
       }
     },
     {
-      "taskCount": 0,
+      "taskCount": 1,
       "intervalMS": 1000,
-      "applicationName": "Test_PointRead1",
+      "applicationName": "Demo_Read_Account",
       "pointRead": {
-        "partitionKey": "@id",
-        "id": "@id",
+        "partitionKey": "@accountId",
+        "id": "@accountId",
         "parameters": [
           {
-            "name": "@id",
-            "type": "sequential_int",
-            "start": 1
+            "name": "@accountId",
+            "type": "random_int_as_string",
+            "start": 1,
+            "end": 1000000
           }
         ]
       }
     },
     {
-      "taskCount": 0,
+      "taskCount": 1,
       "intervalMS": 1000,
-      "applicationName": "Create_Object",
+      "applicationName": "Demo_Create_Transaction",
       "allowBulk": false,
       "create": {
         "entity": {
           "id": "@id",
-          "uuid": "@uuid",
-          "attribute1": "some hardcoded value",
-          "attribute2": "@attribute2",
+          "accountId": "@accountId",
+          "description": "Transaction description",
+          "merchant": "Merchant name",
+          "type": "transaction",
+          "amout": "@amount",
           "timestamp": "@timestamp"
         },
         "partitionKey": [
-          "id"
+          "accountId"
         ],
         "parameters": [
           {
-            "name": "@id",
-            "type": "sequential_int",
-            "start": 1
+            "name": "@accountId",
+            "type": "random_int_as_string",
+            "start": 1,
+            "end": 1000000
           },
           {
-            "name": "@uuid",
+            "name": "@amount",
+            "type": "random_int",
+            "start": 1,
+            "end": 1000
+          },
+          {
+            "name": "@id",
             "type": "guid"
           },
           {
-            "name": "@attribute2",
-            "type": "random_int",
+            "name": "@timestamp",
+            "type": "datetime"
+          }
+        ]
+      }
+    },
+    {
+      "taskCount": 1,
+      "intervalMS": 1000,
+      "applicationName": "Demo_Upsert_Account",
+      "allowBulk": false,
+      "upsert": {
+        "entity": {
+          "id": "@accountId",
+          "accountId": "@accountId",
+          "firstName": "@firstName",
+          "lastName": "@lastName",
+          "balance": "@balance",
+          "overdraftLimit": 1000,
+          "lastModifiedAt": "@timestamp"
+        },
+        "partitionKey": [
+          "accountId"
+        ],
+        "parameters": [
+          {
+            "name": "@accountId",
+            "type": "random_int_as_string",
             "start": 1,
-            "end": 100000
+            "end": 1000000
+          },
+          {
+            "name": "@firstName",
+            "type": "Faker.FirstName"
+          },
+          {
+            "name": "@lastName",
+            "type": "Faker.LastName"
+          },
+          {
+            "name": "@balance",
+            "type": "random_int",
+            "start": 0,
+            "end": 10000
           },
           {
             "name": "@timestamp",
@@ -84,34 +130,41 @@
     },
     {
       "taskCount": 0,
-      "intervalMS": 1000,
-      "applicationName": "Upsert_Object",
-      "allowBulk": false,
-      "upsert": {
+      "intervalMS": 0,
+      "applicationName": "Demo_Create_Account",
+      "allowBulk": true,
+      "create": {
         "entity": {
           "id": "@id",
-          "attribute1": "some hardcoded value - updated",
-          "attribute2": "@attribute2",
-          "timestamp": "@timestamp"
+          "accountId": "@id",
+          "firstName": "@firstName",
+          "lastName": "@lastName",
+          "balance": "@balance",
+          "overdraftLimit": 1000,
+          "lastModifiedAt": "@timestamp"
         },
         "partitionKey": [
-          "id"
+          "accountId"
         ],
         "parameters": [
           {
             "name": "@id",
-            "type": "sequential_int",
+            "type": "sequential_int_as_string",
             "start": 1
           },
           {
-            "name": "@uuid",
-            "type": "guid"
+            "name": "@firstName",
+            "type": "Faker.FirstName"
           },
           {
-            "name": "@attribute2",
+            "name": "@lastName",
+            "type": "Faker.LastName"
+          },
+          {
+            "name": "@balance",
             "type": "random_int",
-            "start": 1,
-            "end": 100000
+            "start": 0,
+            "end": 10000
           },
           {
             "name": "@timestamp",

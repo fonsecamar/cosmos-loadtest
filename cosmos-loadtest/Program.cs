@@ -1,9 +1,11 @@
-﻿using cosmos_loadtest;
+﻿using Bogus;
+using cosmos_loadtest;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Text.RegularExpressions;
 using static cosmos_loadtest.LoadConfig;
 
 public partial class Program
@@ -53,7 +55,7 @@ public partial class Program
             var options = new CosmosClientOptions()
             {
                 ApplicationName = item.applicationName,
-                ApplicationPreferredRegions = new List<string>() { config.preferredRegion },
+                ApplicationPreferredRegions = config.preferredRegions,
                 EnableContentResponseOnWrite = config.printResultRecord,
                 AllowBulkExecution = item.allowBulk
             };
@@ -84,9 +86,54 @@ public partial class Program
         await Task.WhenAll(tasks);
     }
 
-    static string GetSequentialValueAsync(string paramName, long startValue)
+    static async Task ExecutePointReadAsync(CosmosClient cosmosClient, LoadConfig loadConfig, int instanceNumber, CancellationToken cancellation)
     {
-        return sequentialValues.AddOrUpdate(paramName, startValue, (x, y) => Interlocked.Add(ref y, 1)).ToString();
+        var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
+
+        var paramId = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.id).First();
+        var paramPk = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.partitionKey).First();
+
+        bool isIdPkSame = loadConfig.pointRead.id == loadConfig.pointRead.partitionKey;
+        var faker = new Faker();
+
+        while (!cancellation.IsCancellationRequested)
+        {
+            try
+            {
+                if (loadConfig.pointRead.parameters.Count > 2)
+                    throw new Exception("Maximum of 2 parameters for Point Read operations!");
+
+                var id = GenerateParamValue(paramId, faker, loadConfig.id).ToString();
+                var pk = isIdPkSame ? id : GenerateParamValue(paramPk, faker, loadConfig.id).ToString();
+
+                using (var response = await container.ReadItemStreamAsync(id, new PartitionKey(pk)))
+                {
+                    if (config.printResultRecord)
+                    {
+                        if (response.Content != null)
+                        {
+                            byte[] payload = new byte[response.Content.Length];
+                            response.Content.Position = 0;
+                            await response.Content.ReadAsync(payload, 0, (int)response.Content.Length);
+                            Console.WriteLine($"Result: {string.Join("\n", Encoding.UTF8.GetString(payload))}");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Result: Not found.");
+                        }
+                    }
+
+                    if (config.printClientStats)
+                        Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            await Task.Delay(loadConfig.intervalMS);
+        }
     }
 
     static async Task ExecuteQueryAsync(CosmosClient cosmosClient, LoadConfig loadConfig, int instanceNumber, CancellationToken cancellation)
@@ -95,13 +142,19 @@ public partial class Program
 
         QueryDefinition query = new QueryDefinition(loadConfig.query.text);
 
+        var faker = new Faker();
+
         while (!cancellation.IsCancellationRequested)
         {
             try
             {
+                Dictionary<string, JValue> values = new Dictionary<string, JValue>();
+
                 foreach (var item in loadConfig.query.parameters)
                 {
-                    query.WithParameter(item.name, GenerateParamValue(item, loadConfig.id).ToString());
+                    var val = GenerateParamValue(item, faker, loadConfig.id, values);
+                    values.Add(item.name, val);
+                    query.WithParameter(item.name, val.ToString());
                 }
 
                 using (var iterator = container.GetItemQueryStreamIterator(query))
@@ -109,13 +162,20 @@ public partial class Program
                     while (iterator.HasMoreResults)
                     {
                         var response = await iterator.ReadNextAsync();
-                        
+
                         if (config.printResultRecord)
                         {
-                            byte[] payload = new byte[response.Content.Length];
-                            response.Content.Position = 0;
-                            await response.Content.ReadAsync(payload, 0, (int)response.Content.Length);
-                            Console.WriteLine($"Result: {string.Join("\n", Encoding.UTF8.GetString(payload))}");
+                            if (response.Content != null)
+                            {
+                                byte[] payload = new byte[response.Content.Length];
+                                response.Content.Position = 0;
+                                await response.Content.ReadAsync(payload, 0, (int)response.Content.Length);
+                                Console.WriteLine($"Result: {string.Join("\n", Encoding.UTF8.GetString(payload))}");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Result: Not found.");
+                            }
                         }
 
                         if (config.printClientStats)
@@ -136,27 +196,26 @@ public partial class Program
     {
         var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
 
-        Dictionary<Param, List<string>> paths = new Dictionary<Param, List<string>>();
-
         var lConfig = loadConfig.create ?? loadConfig.upsert;
 
-        foreach (var item in lConfig.parameters)
-        {
-            paths.Add(item, lConfig.entity.Values().Where(x => x.ToString() == item.name).Select(x => x.Path).ToList());
-        }
+        var paths = MapParameters(lConfig.entity.Values());
+
+        var faker = new Faker();
 
         while (!cancellation.IsCancellationRequested)
         {
-            var entity = JObject.FromObject(lConfig.entity);
-
             try
             {
-                foreach (var item in paths)
+                var entity = JObject.FromObject(lConfig.entity);
+
+                Dictionary<string, JValue> values = new Dictionary<string, JValue>();
+                foreach (var param in lConfig.parameters)
                 {
-                    var val = GenerateParamValue(item.Key, loadConfig.id);
-                    foreach (var path in item.Value)
+                    var val = GenerateParamValue(param, faker, loadConfig.id, values);
+                    values.Add(param.name, val);
+                    foreach (var path in paths[param.name])
                     {
-                        entity[path] = val;
+                        ReplacePath(entity, path, val);
                     }
                 }
 
@@ -175,7 +234,7 @@ public partial class Program
                     Console.WriteLine($"Result: {string.Join("\n", response.Resource)}");
 
                 if (config.printClientStats)
-                    Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}");
+                    Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
             }
             catch (Exception ex)
             {
@@ -186,7 +245,7 @@ public partial class Program
         }
     }
 
-    static JValue GenerateParamValue(Param param, string configContext)
+    static JValue GenerateParamValue(Param param, Faker faker, string configContext, Dictionary<string, JValue> values = null)
     {
         switch (param.type.ToLowerInvariant())
         {
@@ -195,55 +254,90 @@ public partial class Program
             case "datetime":
                 return new JValue(DateTime.UtcNow);
             case "random_int":
+                return new JValue(Random.Shared.NextInt64(param.start, param.end));
+            case "random_int_as_string":
                 return new JValue(Random.Shared.NextInt64(param.start, param.end).ToString());
             case "sequential_int":
+                return new JValue(GetSequentialValueAsync($"{configContext}_{param.name}", param.start));
+            case "sequential_int_as_string":
                 return new JValue(GetSequentialValueAsync($"{configContext}_{param.name}", param.start).ToString());
             case "random_list":
                 return new JValue(param.list[Random.Shared.Next(1, param.list.Count)]);
+            case "random_bool":
+                return new JValue(Random.Shared.Next(2) == 1);
+            case "faker.firstname":
+                return new JValue(faker.Name.FirstName());
+            case "faker.lastname":
+                return new JValue(faker.Name.LastName());
+            case "faker.fullname":
+                return new JValue(faker.Name.FullName());
+            case "faker.dateofbirth":
+                return new JValue(faker.Person.DateOfBirth.ToString("yyyy-MM-dd"));
+            case "faker.address":
+                return new JValue(faker.Address.StreetAddress());
+            case "faker.phone":
+                return new JValue(faker.Phone.PhoneNumber());
+            case "faker.email":
+                return new JValue(faker.Internet.ExampleEmail(faker.Name.FirstName(), faker.Name.LastName()));
+            case "concat":
+                var sb = new StringBuilder();
+                var idx = 0;
+                foreach (Match item in Regex.Matches(param.value, "\\{@\\w+\\}"))
+                {
+                    sb.Append(param.value.Substring(idx, item.Index - idx));
+                    sb.Append(values[item.Value.Substring(1, item.Value.Length - 2)]);
+                    idx = item.Index + item.Length;
+                }
+                if (param.value.Length > idx + 1) sb.Append(param.value.Substring(idx));
+                return new JValue(sb.ToString());
             default:
                 return new JValue("");
         }
     }
-
-    static async Task ExecutePointReadAsync(CosmosClient cosmosClient, LoadConfig loadConfig, int instanceNumber, CancellationToken cancellation)
+    static string GetSequentialValueAsync(string paramName, long startValue)
     {
-        var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
+        return sequentialValues.AddOrUpdate(paramName, startValue, (x, y) => Interlocked.Add(ref y, 1)).ToString();
+    }
 
-        var paramId = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.id).First();
-        var paramPk = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.partitionKey).First();
-
-        bool isIdPkSame = loadConfig.pointRead.id == loadConfig.pointRead.partitionKey;
-
-        while (!cancellation.IsCancellationRequested)
+    static JObject ReplacePath<T>(JToken root, string path, T newValue)
+    {
+        if (root == null || path == null)
         {
-            try
-            {
-                if (loadConfig.pointRead.parameters.Count > 2)
-                    throw new Exception("Maximum of 2 parameters for Point Read operations!");
-
-                var id = GenerateParamValue(paramId, loadConfig.id).ToString();
-                var pk = isIdPkSame ? id : GenerateParamValue(paramPk, loadConfig.id).ToString();
-
-                using (var response = await container.ReadItemStreamAsync(id, new PartitionKey(pk)))
-                {
-                    if (config.printResultRecord)
-                    {
-                        byte[] payload = new byte[response.Content.Length];
-                        response.Content.Position = 0;
-                        await response.Content.ReadAsync(payload, 0, (int)response.Content.Length);
-                        Console.WriteLine($"Result: {string.Join("\n", Encoding.UTF8.GetString(payload))}");
-                    }
-
-                    if (config.printClientStats)
-                        Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-
-            await Task.Delay(loadConfig.intervalMS);
+            throw new ArgumentNullException();
         }
+
+        foreach (var value in root.SelectTokens(path).ToList())
+        {
+            if (value == root)
+            {
+                root = JToken.FromObject(newValue);
+            }
+            else
+            {
+                value.Replace(JToken.FromObject(newValue));
+            }
+        }
+
+        return (JObject)root;
+    }
+
+    static Dictionary<string, List<string>> MapParameters(IEnumerable<JToken> values)
+    {
+        var paths = new Dictionary<string, List<string>>();
+
+        foreach (var val in values)
+        {
+            if (val.HasValues)
+                paths = paths.Concat(MapParameters(val.Values())).GroupBy(d => d.Key).ToDictionary(d => d.Key, d => d.First().Value);
+            else if (val.ToString().StartsWith("@"))
+            {
+                if (paths.ContainsKey(val.ToString()))
+                    paths[val.ToString()].Add(val.Path);
+                else
+                    paths.Add(val.ToString(), new List<string>() { val.Path });
+            }
+        }
+
+        return paths;
     }
 }

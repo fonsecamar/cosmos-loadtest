@@ -12,7 +12,7 @@ namespace cosmos_loadtest
         public string cosmosConnection { get; set; }
         public string databaseName { get; set; }
         public string containerName { get; set; }
-        public string preferredRegion { get; set; }
+        public List<string> preferredRegions { get; set; }
         public int durationSec { get; set; }
         public bool printClientStats { get; set; }
         public bool printResultRecord { get; set; }

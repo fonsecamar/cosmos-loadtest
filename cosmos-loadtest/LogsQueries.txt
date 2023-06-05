@@ -1,21 +1,60 @@
-﻿//Requests per second for each tested queries
+﻿//Requests per second for each tested operations. Adjust time filter accordingly.
 CDBDataPlaneRequests
-| where OperationName == "Query" and CollectionName == "container1"
+| where TimeGenerated > ago(30m)
 | extend Application = tostring(split(UserAgent, "|")[6])
+| where Application startswith "Demo_"
 | summarize count() by bin(TimeGenerated, 1s), Application
 | render timechart 
 
-//Aggregated Requests per second considering all tested queries
+//Aggregated Requests per second considering all tested operations. Adjust time filter accordingly.
 CDBDataPlaneRequests
-| where OperationName == "Query" and CollectionName == "container1"
+| where TimeGenerated > ago(30m)
 | extend Application = tostring(split(UserAgent, "|")[6])
-| where Application startswith "Test_Query"
+| where Application startswith "Demo_"
 | summarize count() by bin(TimeGenerated, 1s)
-| render timechart 
+| render timechart
 
-//Requests per second for each region
+//Requests per second for each region. Adjust time filter accordingly.
 CDBDataPlaneRequests
-| where OperationName == "Query" and CollectionName == "container1"
+| where TimeGenerated > ago(30m)
 | extend Application = tostring(split(UserAgent, "|")[6])
+| where Application startswith "Demo_"
 | summarize count() by bin(TimeGenerated, 1s), RegionName
 | render timechart
+
+//Duration percentiles, Min and Max by Operation type. Adjust time filter accordingly.
+CDBDataPlaneRequests
+| where TimeGenerated > ago(30m)
+| extend Application = tostring(split(UserAgent, "|")[6])
+| where Application startswith "Demo_"
+| summarize percentiles(DurationMs, 50, 90, 95, 99), min(DurationMs), max(DurationMs) by OperationName
+
+//Average RU by second and Operation type. Adjust time filter accordingly.
+CDBDataPlaneRequests
+| where TimeGenerated > ago(30m)
+| extend Application = tostring(split(UserAgent, "|")[6])
+| where Application startswith "Demo_"
+| summarize avg(RequestCharge) by bin(TimeGenerated, 1s), OperationName
+| render timechart
+
+//Total RU by second and Operation type. Adjust time filter accordingly.
+CDBDataPlaneRequests
+| where TimeGenerated > ago(30m)
+| extend Application = tostring(split(UserAgent, "|")[6])
+| where Application startswith "Demo_"
+| summarize sum(RequestCharge) by bin(TimeGenerated, 1s), OperationName
+| render timechart
+
+//Total used RUs by second. Adjust time filter accordingly.
+CDBDataPlaneRequests
+| where TimeGenerated > ago(30m)
+| extend Application = tostring(split(UserAgent, "|")[6])
+| where Application startswith "Demo_"
+| summarize sum(RequestCharge) by bin(TimeGenerated, 1s)
+| render timechart 
+
+//Total RUs consumed by physical partition. Adjust time filter accordingly.
+CDBPartitionKeyRUConsumption
+| where TimeGenerated > ago(30m)
+| summarize sum(RequestCharge) by bin(TimeGenerated, 1s), PartitionKeyRangeId
+| render timechart 
