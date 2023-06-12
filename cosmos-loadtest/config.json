@@ -2,7 +2,7 @@
   "cosmosConnection": "AccountEndpoint=https://<your account>.documents.azure.com:443/;AccountKey=<account key>",
   "databaseName": "payments",
   "containerName": "transaction",
-  "preferredRegion": [ "South Central US" ],
+  "preferredRegions": [ "South Central US" ],
   "durationSec": 300,
   "printClientStats": true,
   "printResultRecord": true,

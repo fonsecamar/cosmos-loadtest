@@ -124,7 +124,7 @@ public partial class Program
                     }
 
                     if (config.printClientStats)
-                        Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}");
+                        Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
                 }
             }
             catch (Exception ex)
@@ -179,7 +179,7 @@ public partial class Program
                         }
 
                         if (config.printClientStats)
-                            Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}");
+                            Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
                     }
                 }
             }
