@@ -124,7 +124,7 @@ public partial class Program
                     }
 
                     if (config.printClientStats)
-                        Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
+                        Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, RU Charge: {response.Headers["x-ms-request-charge"]}, Client time: {response.Diagnostics.GetClientElapsedTime().TotalMilliseconds}ms, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
                 }
             }
             catch (Exception ex)
@@ -179,7 +179,7 @@ public partial class Program
                         }
 
                         if (config.printClientStats)
-                            Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
+                            Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, RU Charge: {response.Headers["x-ms-request-charge"]}, Client time: {response.Diagnostics.GetClientElapsedTime().TotalMilliseconds}ms, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
                     }
                 }
             }
@@ -234,7 +234,7 @@ public partial class Program
                     Console.WriteLine($"Result: {string.Join("\n", response.Resource)}");
 
                 if (config.printClientStats)
-                    Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, Client time: {response.Diagnostics.GetClientElapsedTime()}, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
+                    Console.WriteLine($"Timestamp: {DateTime.UtcNow}, Operation Name: {loadConfig.applicationName}_{instanceNumber}, RU Charge: {response.RequestCharge}, Client time: {response.Diagnostics.GetClientElapsedTime().TotalMilliseconds}ms, Regions: {string.Join(", ", response.Diagnostics.GetContactedRegions())}");
             }
             catch (Exception ex)
             {
