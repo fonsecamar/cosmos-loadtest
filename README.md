@@ -40,8 +40,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 
 | Attribute | Type | Description | Required |
 | --- | --- | --- | --- |
-| taskCount | integer | Number of concurrent tasks to run | yes |
-| intervalMS | integer | Interval/delay between interations within the same task | yes |
+| requestsPerSecond | integer | Number of concurrent requests per second to run | yes |
 | applicationName | string | Application name used for CosmosClient. Helpful for tracing using Diagnostic Settings | no |
 | query.text | string | Your query to be executed. Include parameters to bind. | yes |
 | query.parameters | array | Array of parameters to bind in query | yes if query has any |
@@ -50,8 +49,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 
 | Attribute | Type | Description | Required |
 | --- | --- | --- | --- |
-| taskCount | integer | Number of concurrent tasks to run | yes |
-| intervalMS | integer | Interval/delay between interations within the same task | yes |
+| requestsPerSecond | integer | Number of concurrent requests per second to run | yes |
 | applicationName | string | Application name used for CosmosClient. Helpful for tracing using Diagnostic Settings | no |
 | pointRead.partitionKey | string | Partition Key value or parameter to bind. | yes |
 | pointRead.id | string | Document Id value or parameter to bind. | yes |
@@ -61,8 +59,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 
 | Attribute | Type | Description | Required |
 | --- | --- | --- | --- |
-| taskCount | integer | Number of concurrent tasks to run | yes |
-| intervalMS | integer | Interval/delay between interations within the same task | yes |
+| requestsPerSecond | integer | Number of concurrent requests per second to run | yes |
 | applicationName | string | Application name used for CosmosClient. Helpful for tracing using Diagnostic Settings | no |
 | allowBulk | boolean | Flag to use Bulk Mode. Default: false. | no |
 | create.entity | JSON object | Any JSON object to create. Include parameters to bind. | yes |
@@ -73,8 +70,7 @@ This guide will help you configure the `config.json` file for the `cosmos-loadte
 
 | Attribute | Type | Description | Required |
 | --- | --- | --- | --- |
-| taskCount | integer | Number of concurrent tasks to run | yes |
-| intervalMS | integer | Interval/delay between interations within the same task | yes |
+| requestsPerSecond | integer | Number of concurrent requests per second to run | yes |
 | applicationName | string | Application name used for CosmosClient. Helpful for tracing using Diagnostic Settings | no |
 | allowBulk | boolean | Flag to use Bulk Mode.. Default: false. | no |
 | upsert.entity | JSON object | Any JSON object to create. Include parameters to bind. | yes |

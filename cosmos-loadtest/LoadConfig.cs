@@ -7,8 +7,7 @@ namespace cosmos_loadtest
         private string _id = Guid.NewGuid().ToString();
 
         public string id { get { return this._id; } }
-        public int taskCount { get; set; }
-        public int intervalMS { get; set; }
+        public int requestsPerSecond { get; set; }
         public string applicationName { get; set; }
         public bool allowBulk { get; set; }
 

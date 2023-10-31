@@ -1,15 +1,14 @@
 {
   "cosmosConnection": "AccountEndpoint=https://<your account>.documents.azure.com:443/;AccountKey=<account key>",
   "databaseName": "payments",
-  "containerName": "transaction",
+  "containerName": "transactions",
   "preferredRegions": [ "South Central US" ],
   "durationSec": 300,
   "printClientStats": true,
   "printResultRecord": true,
   "loadConfig": [
     {
-      "taskCount": 1,
-      "intervalMS": 1000,
+      "requestsPerSecond": 1,
       "applicationName": "Demo_Query_Transaction",
       "query": {
         "text": "select top 50 * from c where c.accountId = @accountId and c.type = \"transaction\" order by c.timestamp desc",
@@ -24,8 +23,7 @@
       }
     },
     {
-      "taskCount": 1,
-      "intervalMS": 1000,
+      "requestsPerSecond": 1,
       "applicationName": "Demo_Read_Account",
       "pointRead": {
         "partitionKey": "@accountId",
@@ -41,8 +39,7 @@
       }
     },
     {
-      "taskCount": 1,
-      "intervalMS": 1000,
+      "requestsPerSecond": 1,
       "applicationName": "Demo_Create_Transaction",
       "allowBulk": false,
       "create": {
@@ -83,8 +80,7 @@
       }
     },
     {
-      "taskCount": 1,
-      "intervalMS": 1000,
+      "requestsPerSecond": 1,
       "applicationName": "Demo_Upsert_Account",
       "allowBulk": false,
       "upsert": {
@@ -129,8 +125,7 @@
       }
     },
     {
-      "taskCount": 0,
-      "intervalMS": 0,
+      "requestsPerSecond": 0,
       "applicationName": "Demo_Create_Account",
       "allowBulk": true,
       "create": {

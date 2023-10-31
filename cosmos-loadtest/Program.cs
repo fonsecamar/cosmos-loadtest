@@ -49,7 +49,7 @@ public partial class Program
 
         foreach (var item in config.loadConfig)
         {
-            if (item.taskCount == 0)
+            if (item.requestsPerSecond == 0)
                 continue;
 
             var options = new CosmosClientOptions()
@@ -61,15 +61,17 @@ public partial class Program
             };
 
             var cosmosClient = await CosmosClient.CreateAndInitializeAsync(config.cosmosConnection, containers, options);
+            var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
+            var throttler = new SemaphoreSlim(item.requestsPerSecond);
 
-            for (int i = 0; i < item.taskCount; i++)
+            for (int i = 0; i < item.requestsPerSecond; i++)
             {
                 if(item.query != null)
-                    tasks.Add(Task.Factory.StartNew(() => ExecuteQueryAsync(cosmosClient, item, i, cancellation), TaskCreationOptions.LongRunning).Unwrap());
+                    tasks.Add(Task.Factory.StartNew(() => ExecuteQueryAsync(container, item, i, throttler, cancellation), TaskCreationOptions.LongRunning).Unwrap());
                 else if (item.create != null || item.upsert != null)
-                    tasks.Add(Task.Factory.StartNew(() => ExecuteCreateUpsertAsync(cosmosClient, item, i, cancellation), TaskCreationOptions.LongRunning).Unwrap());
+                    tasks.Add(Task.Factory.StartNew(() => ExecuteCreateUpsertAsync(container, item, i, throttler, cancellation), TaskCreationOptions.LongRunning).Unwrap());
                 else if (item.pointRead != null)
-                    tasks.Add(Task.Factory.StartNew(() => ExecutePointReadAsync(cosmosClient, item, i, cancellation), TaskCreationOptions.LongRunning).Unwrap());
+                    tasks.Add(Task.Factory.StartNew(() => ExecutePointReadAsync(container, item, i, throttler, cancellation), TaskCreationOptions.LongRunning).Unwrap());
             }
         }
 
@@ -86,10 +88,8 @@ public partial class Program
         await Task.WhenAll(tasks);
     }
 
-    static async Task ExecutePointReadAsync(CosmosClient cosmosClient, LoadConfig loadConfig, int instanceNumber, CancellationToken cancellation)
+    static async Task ExecutePointReadAsync(Container container, LoadConfig loadConfig, int instanceNumber, SemaphoreSlim semaphore, CancellationToken cancellation)
     {
-        var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
-
         var paramId = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.id).First();
         var paramPk = loadConfig.pointRead.parameters.Where(x => x.name == loadConfig.pointRead.partitionKey).First();
 
@@ -98,6 +98,8 @@ public partial class Program
 
         while (!cancellation.IsCancellationRequested)
         {
+            await semaphore.WaitAsync();
+            DateTime start = DateTime.UtcNow;
             try
             {
                 if (loadConfig.pointRead.parameters.Count > 2)
@@ -131,21 +133,26 @@ public partial class Program
             {
                 Console.WriteLine(ex.Message);
             }
+            finally
+            {
 
-            await Task.Delay(loadConfig.intervalMS);
+                int durantion = 985 - (int)(DateTime.UtcNow - start).TotalMilliseconds;
+                await Task.Delay(Math.Max(durantion, 0));
+                semaphore.Release();
+            }
         }
     }
 
-    static async Task ExecuteQueryAsync(CosmosClient cosmosClient, LoadConfig loadConfig, int instanceNumber, CancellationToken cancellation)
+    static async Task ExecuteQueryAsync(Container container, LoadConfig loadConfig, int instanceNumber, SemaphoreSlim semaphore, CancellationToken cancellation)
     {
-        var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
-
         QueryDefinition query = new QueryDefinition(loadConfig.query.text);
 
         var faker = new Faker();
 
         while (!cancellation.IsCancellationRequested)
         {
+            await semaphore.WaitAsync();
+            DateTime start = DateTime.UtcNow;
             try
             {
                 Dictionary<string, JValue> values = new Dictionary<string, JValue>();
@@ -187,15 +194,17 @@ public partial class Program
             {
                 Console.WriteLine(ex.Message);
             }
-
-            await Task.Delay(loadConfig.intervalMS);
+            finally
+            {
+                int durantion = 985 - (int)(DateTime.UtcNow - start).TotalMilliseconds;
+                await Task.Delay(Math.Max(durantion, 0));
+                semaphore.Release();
+            }
         }
     }
 
-    static async Task ExecuteCreateUpsertAsync(CosmosClient cosmosClient, LoadConfig loadConfig, int instanceNumber, CancellationToken cancellation)
+    static async Task ExecuteCreateUpsertAsync(Container container, LoadConfig loadConfig, int instanceNumber, SemaphoreSlim semaphore, CancellationToken cancellation)
     {
-        var container = cosmosClient.GetContainer(config.databaseName, config.containerName);
-
         var lConfig = loadConfig.create ?? loadConfig.upsert;
 
         var paths = MapParameters(lConfig.entity.Values());
@@ -204,6 +213,8 @@ public partial class Program
 
         while (!cancellation.IsCancellationRequested)
         {
+            await semaphore.WaitAsync();
+            DateTime start = DateTime.UtcNow;
             try
             {
                 var entity = JObject.FromObject(lConfig.entity);
@@ -240,8 +251,12 @@ public partial class Program
             {
                 Console.WriteLine(ex.Message);
             }
-
-            await Task.Delay(loadConfig.intervalMS);
+            finally
+            {
+                int durantion = 985 - (int)(DateTime.UtcNow - start).TotalMilliseconds;
+                await Task.Delay(Math.Max(durantion, 0));
+                semaphore.Release();
+            }
         }
     }
 
@@ -262,7 +277,7 @@ public partial class Program
             case "sequential_int_as_string":
                 return new JValue(GetSequentialValueAsync($"{configContext}_{param.name}", param.start).ToString());
             case "random_list":
-                return new JValue(param.list[Random.Shared.Next(1, param.list.Count)]);
+                return new JValue(param.list[Random.Shared.Next(0, param.list.Count-1)]);
             case "random_bool":
                 return new JValue(Random.Shared.Next(2) == 1);
             case "faker.firstname":
