@@ -294,6 +294,8 @@ public partial class Program
                 return new JValue(faker.Phone.PhoneNumber());
             case "faker.email":
                 return new JValue(faker.Internet.ExampleEmail(faker.Name.FirstName(), faker.Name.LastName()));
+            case "constant":
+                return new JValue(param.value);
             case "concat":
                 var sb = new StringBuilder();
                 var idx = 0;
@@ -309,9 +311,9 @@ public partial class Program
                 return new JValue("");
         }
     }
-    static string GetSequentialValueAsync(string paramName, long startValue)
+    static long GetSequentialValueAsync(string paramName, long startValue)
     {
-        return sequentialValues.AddOrUpdate(paramName, startValue, (x, y) => Interlocked.Add(ref y, 1)).ToString();
+        return sequentialValues.AddOrUpdate(paramName, startValue, (x, y) => Interlocked.Add(ref y, 1));
     }
 
     static JObject ReplacePath<T>(JToken root, string path, T newValue)
