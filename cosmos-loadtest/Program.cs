@@ -262,7 +262,7 @@ public partial class Program
             case "sequential_int_as_string":
                 return new JValue(GetSequentialValueAsync($"{configContext}_{param.name}", param.start).ToString());
             case "random_list":
-                return new JValue(param.list[Random.Shared.Next(1, param.list.Count)]);
+                return new JValue(param.list[Random.Shared.Next(0, param.list.Count - 1)]);
             case "random_bool":
                 return new JValue(Random.Shared.Next(2) == 1);
             case "faker.firstname":
@@ -279,6 +279,16 @@ public partial class Program
                 return new JValue(faker.Phone.PhoneNumber());
             case "faker.email":
                 return new JValue(faker.Internet.ExampleEmail(faker.Name.FirstName(), faker.Name.LastName()));
+            case "faker.city":
+                return new JValue(faker.Address.City());
+            case "faker.state":
+                return new JValue(faker.Address.State());
+            case "faker.zip":
+                return new JValue(faker.Address.ZipCode());
+            case "faker.productdescription":
+                return new JValue(faker.Commerce.ProductDescription());
+            case "constant":
+                return new JValue(param.value);
             case "concat":
                 var sb = new StringBuilder();
                 var idx = 0;
@@ -328,7 +338,7 @@ public partial class Program
         foreach (var val in values)
         {
             if (val.HasValues)
-                paths = paths.Concat(MapParameters(val.Values())).GroupBy(d => d.Key).ToDictionary(d => d.Key, d => d.First().Value);
+                paths = paths.Concat(MapParameters(val.Values())).GroupBy(d => d.Key).ToDictionary(d => d.Key, d => d.SelectMany(v => v.Value).ToList());
             else if (val.ToString().StartsWith("@"))
             {
                 if (paths.ContainsKey(val.ToString()))
