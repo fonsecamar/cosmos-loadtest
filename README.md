@@ -1,5 +1,11 @@
 # Azure Cosmos DB NoSQL - Load Test (alpha version)
 
+## Archived Project Notice
+> **⚠️ This project is archived and no longer maintained.**
+>
+> For Azure Databases load testing, please consider using [db-benchmark](https://github.com/fonsecamar/db-benchmark).
+
+
 ## Introduction
 
 Cosmos Load Test enables you to try/benchmark Azure Cosmos DB for NoSQL using your own entities.
